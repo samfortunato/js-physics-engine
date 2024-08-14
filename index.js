@@ -33,6 +33,7 @@ const object = {
 	dimensions: { w: 32, h: 32 },
 	mass: 1,
 	speed: 3_000,
+	runPower: 2_000,
 	jumpPower: 40_000,
 
 	// dynamic data
@@ -41,11 +42,13 @@ const object = {
 	velocity: { x: 0, y: 0, z: 0 },
 
 	update(deltaTime) {
+		const calculatedSpeed = input.pressedKeys['Shift'] ? this.speed + this.runPower : this.speed;
+
 		// input
-		if (input.pressedKeys['ArrowUp']) this.force.y = -this.speed;
-		if (input.pressedKeys['ArrowRight']) this.force.x = this.speed;
-		if (input.pressedKeys['ArrowDown']) this.force.y = this.speed;
-		if (input.pressedKeys['ArrowLeft']) this.force.x = -this.speed;
+		if (input.pressedKeys['ArrowUp']) this.force.y = -calculatedSpeed;
+		if (input.pressedKeys['ArrowRight']) this.force.x = calculatedSpeed;
+		if (input.pressedKeys['ArrowDown']) this.force.y = calculatedSpeed;
+		if (input.pressedKeys['ArrowLeft']) this.force.x = -calculatedSpeed;
 		if (input.pressedKeys[' '] && this.transform.z === 0) this.force.z = this.jumpPower;
 
 		// calculation
