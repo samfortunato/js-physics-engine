@@ -34,7 +34,7 @@ const object = {
 	mass: 1,
 	speed: 3_000,
 	runPower: 2_000,
-	jumpPower: 10_000,
+	jumpPower: 40_000,
 
 	// information
 	jumpCount: 0,
@@ -50,32 +50,18 @@ const object = {
 	velocity: { x: 0, y: 0, z: 0 },
 
 	update(deltaTime) {
+		// run
 		const calculatedSpeed = input.pressedKeys['Shift'] ? this.speed + this.runPower : this.speed;
 
-		// input
+		// move
 		if (input.pressedKeys['ArrowUp']) this.force.y = -calculatedSpeed;
 		if (input.pressedKeys['ArrowRight']) this.force.x = calculatedSpeed;
 		if (input.pressedKeys['ArrowDown']) this.force.y = calculatedSpeed;
 		if (input.pressedKeys['ArrowLeft']) this.force.x = -calculatedSpeed;
 
-		// jump logic
-		if (input.pressedKeys[' '] && this.jumpCount < 2) {
-			if (this.jumpCount === 0 || (this.jumpCount === 1 && this.jumpCooldown >= this.maxJumpCooldown)) {
-				this.jumpCount++;
-				this.jumpTime = 0; // Reset jump time when initiating a jump
-				this.force.z = this.jumpPower; // Apply initial jump force
-			}
-		}
-
-		// apply continuous jump force while holding spacebar
-		if (this.transform.z > 0 && input.pressedKeys[' '] && this.jumpTime < this.maxJumpTime) {
-			this.force.z = this.jumpPower;
-			this.jumpTime += deltaTime;
-		}
-
-		// increase cooldown while in air
-		if (this.transform.z > 0) {
-			this.jumpCooldown = Math.min(this.jumpCooldown + deltaTime * 1000, this.maxJumpCooldown);
+		// jump
+		if (input.pressedKeys[' '] && this.transform.z === 0) {
+			this.force.z = this.jumpPower; // Apply initial jump force
 		}
 
 		// glide
@@ -98,11 +84,8 @@ const object = {
 		this.transform.z += this.velocity.z * deltaTime;
 
 		// calming down
-		// this.velocity.x = (this.velocity.x < 0) ? (0) : (this.velocity.x - physics.deceleration);
-		// this.velocity.y = (this.velocity.y < 0) ? (0) : (this.velocity.y - physics.deceleration);
 		this.velocity.x *= 1 - physics.deceleration * deltaTime;
 		this.velocity.y *= 1 - physics.deceleration * deltaTime;
-		// this.velocity.z = this.transform.z < 0 ? 0 : this.velocity.z;
 
 		if (this.transform.z < 0) {
 			this.transform.z = 0;
@@ -118,8 +101,10 @@ const object = {
 
 	draw(painter) {
 		// shadow
-		painter.fillStyle = 'gray';
+		painter.globalAlpha = 0.5;
+		painter.fillStyle = 'black';
 		painter.fillRect(this.transform.x, this.transform.y + this.dimensions.h / 2, this.dimensions.w, this.dimensions.h / 2)
+		painter.globalAlpha = 1;
 
 		// illusion to simulate jumping upwards
 		const yPlusOffset = this.transform.y - this.transform.z;
