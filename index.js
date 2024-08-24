@@ -13,7 +13,7 @@ const drawer = {
 	initialize() {
 		this.screen = document.createElement('canvas');
 		this.screen.width = 800;
-		this.screen.height = 800;
+		this.screen.height = 600;
 
 		this.painter = this.screen.getContext('2d');
 
