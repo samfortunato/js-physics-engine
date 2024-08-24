@@ -34,7 +34,15 @@ const object = {
 	mass: 1,
 	speed: 3_000,
 	runPower: 2_000,
-	jumpPower: 40_000,
+	jumpPower: 10_000,
+
+	// information
+	jumpCount: 0,
+	jumpTime: 0,
+	maxJumpTime: 0.2,
+	jumpCooldown: 0,
+	maxJumpCooldown: 100,
+	hasLiftedSpaceBar: true,
 
 	// dynamic data
 	force: { x: 0, y: 0, z: 0 },
@@ -49,7 +57,31 @@ const object = {
 		if (input.pressedKeys['ArrowRight']) this.force.x = calculatedSpeed;
 		if (input.pressedKeys['ArrowDown']) this.force.y = calculatedSpeed;
 		if (input.pressedKeys['ArrowLeft']) this.force.x = -calculatedSpeed;
-		if (input.pressedKeys[' '] && this.transform.z === 0) this.force.z = this.jumpPower;
+
+		// jump logic
+		if (input.pressedKeys[' '] && this.jumpCount < 2) {
+			if (this.jumpCount === 0 || (this.jumpCount === 1 && this.jumpCooldown >= this.maxJumpCooldown)) {
+				this.jumpCount++;
+				this.jumpTime = 0; // Reset jump time when initiating a jump
+				this.force.z = this.jumpPower; // Apply initial jump force
+			}
+		}
+
+		// apply continuous jump force while holding spacebar
+		if (this.transform.z > 0 && input.pressedKeys[' '] && this.jumpTime < this.maxJumpTime) {
+			this.force.z = this.jumpPower;
+			this.jumpTime += deltaTime;
+		}
+
+		// increase cooldown while in air
+		if (this.transform.z > 0) {
+			this.jumpCooldown = Math.min(this.jumpCooldown + deltaTime * 1000, this.maxJumpCooldown);
+		}
+
+		// glide
+		if (input.pressedKeys['Shift']) {
+			this.velocity.z = 0;
+		}
 
 		// calculation
 		this.acceleration.x = this.force.x / this.mass;
@@ -70,9 +102,14 @@ const object = {
 		// this.velocity.y = (this.velocity.y < 0) ? (0) : (this.velocity.y - physics.deceleration);
 		this.velocity.x *= 1 - physics.deceleration * deltaTime;
 		this.velocity.y *= 1 - physics.deceleration * deltaTime;
-		this.velocity.z = this.transform.z < 0 ? 0 : this.velocity.z;
+		// this.velocity.z = this.transform.z < 0 ? 0 : this.velocity.z;
 
-		if (this.transform.z < 0) this.transform.z = 0;
+		if (this.transform.z < 0) {
+			this.transform.z = 0;
+			this.velocity.z = 0;
+			this.jumpCount = 0;
+			this.jumpCooldown = 0;
+		}
 
 		this.force.x = 0;
 		this.force.y = 0;
@@ -112,10 +149,37 @@ const time = {
 			this.accumulatedTime -= this.fixedTimeStep;
 		}
 	},
-}
+};
+
+const eventManager = {
+	queue: [],
+
+	update() {
+		while (this.queue.length > 0) {
+			this.process(this.queue.shift());
+		}
+	},
+
+	emit(event) {
+		this.queue.push(event);
+	},
+
+	process(event) {
+		switch (event.type) {
+			case 'attack':
+				executeOnCollision((attacker, victim) => {
+					victim.hp -= attacker.stats.attack;
+				});
+
+			default: break;
+		}
+	}
+};
 
 function update() {
 	time.update();
+	eventManager.update();
+	// entitiesManager.update();
 }
 
 function draw(painter) {
